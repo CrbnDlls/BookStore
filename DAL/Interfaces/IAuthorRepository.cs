@@ -1,0 +1,16 @@
+﻿using DAL.Entity;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DAL.Interfaces
+{
+    public interface IAuthorRepository : IBaseRepository<Author>
+    {
+        public Task<IEnumerable<Author>> SelectWithBooks();
+
+        public Task<Author> GetAuthorWithBooksById(int id);
+    }
+}

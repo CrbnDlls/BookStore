@@ -1,0 +1,267 @@
+﻿@model BookStore.Models.AuthorViewModel
+
+@{
+    ViewData["Title"] = "Книги автора";
+}
+
+<h1>Книги автора</h1>
+
+<div>
+    <h4>Автор</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.FamilyName)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.FamilyName)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Name)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Name)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.FathersName)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.FathersName)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.BirthDate)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.BirthDate)
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model?.Id">Редагувати автора</a> |
+    <a asp-action="Index">Назад до списку</a>
+</div>
+<p>
+
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Books.FirstOrDefault().Title)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Books.FirstOrDefault().PageQuantity)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Books.FirstOrDefault().Genre)
+            </th>
+            <th><a data-bs-toggle="modal" data-bs-target="#editmodal" href="#" onclick="CreateBook()">Додати книгу</a></th>
+        </tr>
+    </thead>
+    <tbody id="booksBody">
+    </tbody>
+</table>
+<div><span id="warning" style="color:red"></span></div>
+<a href="#" onclick="PushBooksToServer()">Зберегти зміни</a>
+<div class="modal fade" id="editmodal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">Редагувати книгу</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="javascript:SaveEditedBook();" id="editBookForm">
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        
+                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                            <input type="hidden" asp-for="Books.FirstOrDefault().Id" id="editBookId" />
+                            <div class="form-group">
+                                <label asp-for="Books.FirstOrDefault().Title" class="control-label"></label>
+                                <input asp-for="Books.FirstOrDefault().Title" class="form-control" id="editBookTitle" />
+                                <span asp-validation-for="Books.FirstOrDefault().Title" class="text-danger"></span>
+                            </div>
+                            <div class="form-group">
+                                <label asp-for="Books.FirstOrDefault().PageQuantity" class="control-label"></label>
+                                <input asp-for="Books.FirstOrDefault().PageQuantity" class="form-control" id="editBookPageQuantity" />
+                                <span asp-validation-for="Books.FirstOrDefault().PageQuantity" class="text-danger"></span>
+                            </div>
+                            <div class="form-group">
+                                <label asp-for="Books.FirstOrDefault().Genre" class="control-label"></label>
+                                <select asp-for="Books.FirstOrDefault().Genre" class="form-control" asp-items="Html.GetEnumSelectList<DAL.Enums.Genre>()" id="editBookGenre"></select>
+                                <span asp-validation-for="Books.FirstOrDefault().Genre" class="text-danger"></span>
+                            </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрити</button>
+                <input type="submit" class="btn btn-primary" value="Зберегти"/>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section scripts
+    {
+    <script type="text/javascript">
+        let authorBooks;
+        const tB = document.getElementById("booksBody");
+        function genTable() {
+
+            let R = authorBooks.length;
+            
+
+            for (let r = 0; r < R; r++) {
+                
+                AddTableRow(r);
+            }
+        }
+
+        function AddTableRow(index)
+        {
+            let row = tB.insertRow();
+            row.insertCell().textContent = authorBooks[index].Title;
+            row.insertCell().textContent = authorBooks[index].PageQuantity;
+            row.insertCell().textContent = authorBooks[index].JsonGenre;
+            SetCellLinks(row.insertCell(), index, authorBooks[index].Id == 0 ? 2 : 3);
+        }
+
+        function DeleteBook(index)
+        {
+            authorBooks[index].RecordStatus = 1;
+            SetCellLinks(tB.rows[index].cells[3],index,1);
+        }
+
+        function CancelDeleteBook(index) {
+            authorBooks[index].RecordStatus = 3;
+            SetCellLinks(tB.rows[index].cells[3], index, 3);
+        }
+
+        function SetCellLinks(cell,index,status)
+        {
+            switch (status)
+            {
+                case 1:
+                    cell.innerHTML = '<span style="color:red">На видалення</span> | <a href="#" onclick="CancelDeleteBook(' + index + ');">Відмінити</a>';
+                    break;
+                default:
+                    cell.innerHTML = '<a data-bs-toggle="modal" data-bs-target="#editmodal" href="#" onclick="EditBook(' + index + ');">Редагувати</a> | <a href="#" onclick="DeleteBook(' + index + ');">Видалити</a>';
+                    break;
+            }   
+        }
+
+        function CreateBook()
+        {
+            document.getElementById("editBookId").value = 'new';
+            document.getElementById("editBookTitle").value = '';
+            document.getElementById("editBookPageQuantity").value = '';
+            document.getElementById("editBookGenre").value = 0;
+            ClearEditFormErrorMessages();
+        }
+
+        function EditBook(index)
+        {
+            document.getElementById("editBookId").value = index;
+            document.getElementById("editBookTitle").value = authorBooks[index].Title;
+            document.getElementById("editBookPageQuantity").value = authorBooks[index].PageQuantity;
+            document.getElementById("editBookGenre").value = authorBooks[index].Genre;
+            ClearEditFormErrorMessages();
+        }
+
+        function ClearEditFormErrorMessages()
+        {
+            const parentElement = document.querySelector("#editBookForm");
+            let allChildren = parentElement.querySelectorAll("span[data-valmsg-for]");
+            allChildren.forEach((item) => item.innerHTML = '');
+        }
+
+        function SaveEditedBook()
+        {
+            let index = document.getElementById("editBookId").value;
+            if (index == 'new')
+            {
+                AddTableRow(AddBook());
+            }
+            else
+            {
+                UpdateBook(index);
+                SetBookCellsContent(index);
+            }
+            document.querySelector("#warning").innerHTML = 'Є не збережені дані';
+            $('#editmodal').modal('hide');
+        }
+
+        function AddBook()
+        {
+            let select = document.getElementById("editBookGenre");
+            let book = {
+                Id: 0,
+                Author: null,
+                AuthorId: 0,
+                Title: document.getElementById("editBookTitle").value,
+                PageQuantity: document.getElementById("editBookPageQuantity").value,
+                Genre: select.value,
+                JsonGenre: select.selectedOptions[0].innerText,
+                RecordStatus: 2
+            }
+            let index = authorBooks.length;
+            authorBooks.push(book);
+            return index;
+        }
+
+        function UpdateBook(index)
+        {
+            authorBooks[index].Title = document.getElementById("editBookTitle").value;
+            authorBooks[index].PageQuantity = document.getElementById("editBookPageQuantity").value;
+            let select = document.getElementById("editBookGenre");
+            authorBooks[index].Genre = select.value;
+            authorBooks[index].JsonGenre = select.selectedOptions[0].innerText;
+            authorBooks[index].RecordStatus = authorBooks[index].RecordStatus == 2 ? 2 : 3;
+        }
+
+        function SetBookCellsContent(index)
+        {
+            tB.rows[index].cells[0].textContent = authorBooks[index].Title;
+            tB.rows[index].cells[1].textContent = authorBooks[index].PageQuantity;
+            tB.rows[index].cells[2].textContent = authorBooks[index].JsonGenre;
+            SetCellLinks(tB.rows[index].cells[3], index, authorBooks[index].RecordStatus);
+        }
+
+        function PushBooksToServer()
+        {
+            var form = $('#editBookForm');
+            var token = $('input[name="__RequestVerificationToken"]', form).val();
+            $.ajax({
+                type: 'POST',
+                url: "@Url.Action("SaveBooks", "Authors")",
+                data: {
+                        __RequestVerificationToken: token,
+                        id: @Model.Id,
+                        books: authorBooks },
+                success: function (data) {
+                    alert(data);
+                    location.reload();
+                },
+                error: function (xhr) { alert('Не вдалося зберегти список книг. Статус: ' + xhr.status + ', Текст статуса: ' + xhr.status) }
+            });
+        }
+
+        $("document").ready(function () {
+
+            document.querySelector("#editBookForm").setAttribute('action', 'javascript:SaveEditedBook();');
+
+            $.ajax({
+                type: "GET",
+                url: "@Url.Action("GetBooks", "Authors")/@Model.Id",
+                success: function (data) {
+                    authorBooks = data;
+                    genTable();
+                },
+                error: function (xhr) { alert('Не вдалося отримати список книг. Статус: ' + xhr.status + ', Текст статуса: ' + xhr.status) }
+            })
+
+        })
+    </script>
+   }
+
